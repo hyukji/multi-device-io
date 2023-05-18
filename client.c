@@ -32,13 +32,9 @@ int main(int argc, char* argv[])
    if(clnt_sock == -1)
       error_handling("socket error");
 
-   //인자로 받은 서버 주소 정보를 저장
    memset(&serv_addr, 0, sizeof(serv_addr));
-   //서버주소체계는 IPv4이다
-   serv_addr.sin_family = AF_INET;                  
-   //서버주소 IP저장해주기(인자로 받은거 넘겨주기)
+   serv_addr.sin_family = AF_INET;            
    serv_addr.sin_addr.s_addr = inet_addr(argv[1]);  
-   //서버주소 포트번호 인자로 받은거 저장해주기
    serv_addr.sin_port = htons(atoi(argv[2]));
 
    //클라이언트 소켓부분에 서버를 연결!
@@ -51,14 +47,13 @@ int main(int argc, char* argv[])
    while(1) {
       c = getchar();
       buf[0] = c;
+
       printf("input data : %s\n", buf);
-      
       write(clnt_sock, buf, 2); 
       
       if(!strcmp(buf, "q")) {
          break;
       }
-         
    }
     
    //통신 후 소켓 클로우즈
