@@ -6,8 +6,8 @@ Project of system_programming lecture in DGIST
 
 # TO DO LIST
 
-A. 실험준비 (Binary 저장한 file로 입력)
-B. 데모영상 준비 (하드웨어) & 센서 코드 병합
+A. 실험준비 (Binary 저장한 file로 입력)/
+B. 데모영상 준비 (하드웨어) & 센서 코드 병합/
 C. 종료 flow
 D. 윈도우 인풋 mapping
 E. Ping check!
