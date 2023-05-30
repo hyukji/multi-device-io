@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
     printf("clent connect success!\n");   
 
     // open keyboard event fd
-    evnt_fd = open("/dev/input/event4", O_RDONLY);
+    evnt_fd = open("/dev/input/event6", O_RDONLY);
     if(evnt_fd < 0) {
         perror("error in open event file");
         return 1;

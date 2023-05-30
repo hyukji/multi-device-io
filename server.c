@@ -68,7 +68,7 @@ int main(int argc, char* argv[])
         if((pid = fork()) == -1){
             close(clnt_sock);
             perror("fork() error\n");
-        } 
+        }
         else if (pid == 0){    //child process
             close(serv_sock);
             
@@ -78,6 +78,7 @@ int main(int argc, char* argv[])
             evnt_fd = open("/dev/input/event2", O_RDONLY);
 	    if(evnt_fd < 0) {
 		perror("error in open event file");
+	    	close(evnt_fd);
 		return 1;
 	    }
 
