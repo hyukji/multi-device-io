@@ -12,8 +12,6 @@
 #include <pthread.h>
 #include <signal.h>
 
-int *ptr;
-
 void error_handling(char *message)
 {
     fputs(message, stderr);
@@ -21,25 +19,21 @@ void error_handling(char *message)
     exit(1);
 }
 
-void sig_handler() *ptr = 1;
 // 스레드 실행 함수
 void *client_handler(void *arg)
 {
     int fd;
     int nbytes;
-    int loop = 1;
     struct input_event event;
     struct timeval tv;
 
-    ptr = &loop;
-    signal(SIGINT, sig_handler);
     // 현재 스레드의 클라이언트 소켓 가져오기
     int clnt_sock = *((int *)arg);
     free(arg);  // 동적 할당된 메모리 해제
     
     printf("connected! tid : %ld\n", pthread_self());
     
-    const char *evdPath = "/dev/input/event4"; //Need to change event file
+    const char *evdPath = "/dev/input/event3"; //Need to change event file
     fd = open(evdPath, O_RDWR);
     
     if (fd < 0) {
@@ -47,7 +41,7 @@ void *client_handler(void *arg)
         pthread_exit(NULL);
     }
     
-    while (loop > 0) {
+    while (1) {
         // get buffer about event from client
         nbytes = read(clnt_sock, &event, sizeof(event));
         if (nbytes < 0) {
@@ -56,7 +50,9 @@ void *client_handler(void *arg)
             printf("exit! tid : %ld\n", pthread_self());
             pthread_exit(NULL);
         }
-        
+
+        if(recv(clnt_sock, &event, sizeof(event), MSG_PEEK | MSG_DONTWAIT) == 0) break;
+
         write(fd, &event, sizeof(event));
 	
         tv = event.time;

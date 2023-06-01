@@ -9,6 +9,8 @@
 #include <sys/socket.h>
 
 
+int* ptr;
+
 void error_handling(char* message)
 {
    fputs(message, stderr);
@@ -16,9 +18,11 @@ void error_handling(char* message)
    exit(1);
 }
 
-void sig_handle() *ptr = -1;
+void sig_handle(){
+    printf("Terminted!!\n");
+    *ptr = -1;
+} 
 
-int *ptr;
 
     
 int main(int argc, char* argv[])
@@ -38,7 +42,7 @@ int main(int argc, char* argv[])
 
     signal(SIGINT, sig_handle);
     loop = 1;
-    *ptr = &loop;
+    ptr = &loop;
 
     // socket with TCP/IP, IPv4
     clnt_fd = socket(PF_INET, SOCK_STREAM, 0);
@@ -57,7 +61,7 @@ int main(int argc, char* argv[])
     while (loop > 0) {
 	    
 	// Handle READ ERROR
-        if(read(fd, &event, sizeof(event)) == -1) {
+        if(read(evnt_fd, &event, sizeof(event)) == -1) {
             perror("error in read event");
             close(evnt_fd);
    	    close(clnt_fd);
@@ -65,8 +69,8 @@ int main(int argc, char* argv[])
         } 
 	
 	// BREAK when reach to the end of the file
-	if(read(fd, &event, sizeof(event)) == 0){
-	    printf("FILE READ END");
+	if(read(evnt_fd, &event, sizeof(event)) == 0){
+	    printf("FILE READ END\n");
 	    break;
 	}
 
