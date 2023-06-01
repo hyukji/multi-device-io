@@ -22,7 +22,7 @@ void error_handling(char *message)
 // 스레드 실행 함수
 void *client_handler(void *arg)
 {
-    int fd;
+    int fd, fd2;
     int nbytes;
     struct input_event event;
     struct timeval tv;
@@ -34,9 +34,18 @@ void *client_handler(void *arg)
     printf("connected! tid : %ld\n", pthread_self());
     
     const char *evdPath = "/dev/input/event3"; //Need to change event file
+    char *rstPath = (char *)malloc(sizeof(pthread_self()));
+    sprintf(rstPath,"%ld", pthread_self());
+
     fd = open(evdPath, O_RDWR);
-    
+    fd2 = open(rstPath, O_WRONLY | O_CREAT | S_IRWXU);
+
     if (fd < 0) {
+        perror("error");
+        pthread_exit(NULL);
+    }
+
+    if (fd2 < 0) {
         perror("error");
         pthread_exit(NULL);
     }
@@ -54,6 +63,7 @@ void *client_handler(void *arg)
         if(recv(clnt_sock, &event, sizeof(event), MSG_PEEK | MSG_DONTWAIT) == 0) break;
 
         write(fd, &event, sizeof(event));
+        write(fd2, &event, sizeof(event));
 	
         tv = event.time;
         printf("tid %lu, time %ld %ld, type %d, code %d, value %d\n", pthread_self(), tv.tv_sec, tv.tv_usec, event.type, event.code, event.value);
@@ -61,8 +71,9 @@ void *client_handler(void *arg)
     }
 
     close(fd);
+    close(fd2);
     close(clnt_sock);
-
+    free(rstPath);
     pthread_exit(NULL);
 }
 
@@ -73,7 +84,6 @@ int main(int argc, char* argv[])
     // create socket using TCP/ipv4
     int serv_sock;
     int clnt_sock;
-
     struct sockaddr_in serv_addr;
 
     serv_sock = socket(PF_INET, SOCK_STREAM, 0);  // TCP, ipv4
