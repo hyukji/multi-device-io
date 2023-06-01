@@ -19,7 +19,6 @@ void error_handling(char *message)
     exit(1);
 }
 
-// 스레드 실행 함수
 void *client_handler(void *arg)
 {
     int fd, fd2;
@@ -27,10 +26,8 @@ void *client_handler(void *arg)
     struct input_event event;
     struct timeval tv;
 
-    // 현재 스레드의 클라이언트 소켓 가져오기
     int clnt_sock = *((int *)arg);
-    free(arg);  // 동적 할당된 메모리 해제
-    
+    free(arg);      
     printf("connected! tid : %ld\n", pthread_self());
     
     const char *evdPath = "/dev/input/event3"; //Need to change event file
@@ -51,7 +48,7 @@ void *client_handler(void *arg)
     }
     
     while (1) {
-        // get buffer about event from client
+
         nbytes = read(clnt_sock, &event, sizeof(event));
         if (nbytes < 0) {
             perror("read error\n");
@@ -81,7 +78,7 @@ void *client_handler(void *arg)
 
 int main(int argc, char* argv[])
 {          
-    // create socket using TCP/ipv4
+
     int serv_sock;
     int clnt_sock;
     struct sockaddr_in serv_addr;
@@ -114,17 +111,14 @@ int main(int argc, char* argv[])
         struct sockaddr_in clnt_addr; // for accept
         socklen_t clnt_addr_size;
 
-        // accept connection with client 
         clnt_addr_size = sizeof(clnt_addr);
         clnt_sock = accept(serv_sock, (struct sockaddr*)&clnt_addr, &clnt_addr_size);
         if (clnt_sock == -1)
             error_handling("accept error");
 
-        // 클라이언트 소켓을 스레드에 전달하기 위해 동적 할당
         int *new_sock = (int *)malloc(sizeof(int));
         *new_sock = clnt_sock;
 
-        // 스레드 생성 및 실행
         pthread_t tid;
         if (pthread_create(&tid, NULL, client_handler, (void *)new_sock) != 0) {
             perror("pthread_create() error\n");
