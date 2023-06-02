@@ -60,6 +60,7 @@ int main(int argc, char* argv[])
 
     while (loop > 0) {
 	    
+	sleep(1);
 	// Handle READ ERROR
         if(read(evnt_fd, &event, sizeof(event)) == -1) {
             perror("error in read event");

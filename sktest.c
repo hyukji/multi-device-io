@@ -31,11 +31,11 @@ void *client_handler(void *arg)
     printf("connected! tid : %ld\n", pthread_self());
     
     const char *evdPath = "/dev/input/event3"; //Need to change event file
-    char *rstPath = (char *)malloc(sizeof(pthread_self()));
-    sprintf(rstPath,"%ld", pthread_self());
+    char *rstPath = (char *)malloc(sizeof(pthread_self())*2);
+    sprintf(rstPath,"%ld.bin", pthread_self());
 
     fd = open(evdPath, O_RDWR);
-    fd2 = open(rstPath, O_WRONLY | O_CREAT | S_IRWXU);
+    fd2 = open(rstPath, O_RDWR | O_CREAT | S_IRWXU);
 
     if (fd < 0) {
         perror("error");
