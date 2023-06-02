@@ -131,7 +131,7 @@ int main(int argc, char* argv[])
     int clnt_sock;
 
     const char* evdPath = "/dev/input/event2";
-    fd = open(evdPath, O_RDONLY);
+    fd = open(evdPath, O_RDWR);
     printf("main fd %d\n", fd);
     
     struct sockaddr_in serv_addr;
@@ -172,8 +172,9 @@ int main(int argc, char* argv[])
             error_handling("accept error");
             
             
-	int OS;
-        read(clnt_sock, &OS, sizeof(OS));
+	char OS[5];
+	recv(clnt_sock, OS, 4, 0);
+	OS[5] = '\0';
 
         // 클라이언트 소켓을 스레드에 전달하기 위해 동적 할당
         int *new_sock = (int *)malloc(sizeof(int));
@@ -181,23 +182,23 @@ int main(int argc, char* argv[])
 
         // 스레드 생성 및 실행
         pthread_t tid;
-	switch(OS) {
-		case 1:
-		    if (pthread_create(&tid, NULL, client_handler_window, (void *)new_sock) != 0) {
-			    perror("pthread_create() error\n");
-			    exit(1);
-		    }
-		    break;
-		case 2:
+        
+        if(!strcmp(OS, "wind")) {
+		if (pthread_create(&tid, NULL, client_handler_window, (void *)new_sock) != 0) {
+			perror("pthread_create() error\n");
+			exit(1);
+		}
+        }
+        else if(!strcmp(OS, "unix")) {
 		    if (pthread_create(&tid, NULL, client_handler_unix, (void *)new_sock) != 0) {
 			    perror("pthread_create() error\n");
 			    exit(1);
 		    }
-		    break;
-		default:
-		    printf("client OS is not defined\n");
 	}
-        
+        else {
+		printf("Wrong OS %s\n", OS);
+		   break;
+        }
     }
     
     close(serv_sock);
