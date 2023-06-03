@@ -1,0 +1,91 @@
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <wiringPi.h> // this includes the Pi GPIO constants
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <linux/input.h>
+
+#define N =10
+#define path  "dev/input/event0"
+#define LIGHTSEN_OUT 23  //gpio27 - J13 connect
+
+int Change = 0;
+int sensor= 0;
+
+int count() {
+    int previous =sensor;
+    sensor = digitalRead(LIGHTSEN_OUT);
+    if( previous != sensor)  Change += 1;
+    if (Change %N ==0){
+        int fd = open(path, O_RDWR);
+        if (fd < 0) {
+            perror("error");
+            exit(0);
+
+
+        struct timeval tv;
+        struct input_event event[3] = {
+            {tv, 4, 4, 0},
+            {tv, 1, 0, 0},
+            {tv, 0, 0, 0}
+        };
+        //ON
+        
+	    gettimeofday(&tv, NULL);
+        event[0].time = tv;
+        event[0].value = 14;
+        
+        event[1].time = tv;
+        event[1].code = 14;
+        event[1].value = 1;
+        
+        event[2].time = tv;
+        for(int i = 0; i < 3; i++){
+            write(fd, &event[i], sizeof(event[i]));  
+            printf("YEAH!, time %ld %ld, type %d, code %d, value %d\n", tv.tv_sec, tv.tv_usec,  event[i].type, event[i].code, event[i].value);
+    
+        }
+        
+        //OFF
+            
+    	gettimeofday(&tv, NULL);
+        event[0].time = tv;
+        event[0].value = 14;
+        
+        event[1].time = tv;
+        event[1].code = 14;
+        event[1].value = 0;
+        
+        event[2].time = tv;
+        
+        for(int i = 0; i < 3; i++){
+            write(fd, &event[i], sizeof(event[i]));
+            printf("YEAH!, time %ld %ld, type %d, code %d, value %d\n", tv.tv_sec, tv.tv_usec,  event[i].type, event[i].code, event[i].value);          
+        }
+    }
+    }
+        
+
+}
+
+int main(void) 
+{
+	// display counter value every second.
+	while ( 1 ) 
+	{
+		//printf( "%d\n", eventCounter );
+		//eventCounter = 0;
+		
+		if(digitalRead(LIGHTSEN_OUT) == 0)
+			printf("light full ! \n");
+		if(digitalRead(LIGHTSEN_OUT) == 1)
+			printf("dark \n");		
+	
+		delay( 200 ); // wait 1 second
+	}
+
+	return 0;
+}
