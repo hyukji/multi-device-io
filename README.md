@@ -13,5 +13,6 @@ D. 윈도우 인풋 mapping - 지혁
 E. Ping check! - 준섭  
 F. 보고서 초안 + 영상 or 포스터 초안 (사용개념 & 시행착오) - 성종  
 
+if(recv(clnt_sock, &event, sizeof(event), MSG_PEEK | MSG_DONTWAIT) == 0)
 
 
