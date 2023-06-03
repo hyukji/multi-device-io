@@ -130,7 +130,7 @@ int main(int argc, char* argv[])
     int serv_sock;
     int clnt_sock;
 
-    const char* evdPath = "/dev/input/event2";
+    const char* evdPath = "/dev/input/event0";
     fd = open(evdPath, O_RDWR);
     printf("main fd %d\n", fd);
     
@@ -173,8 +173,7 @@ int main(int argc, char* argv[])
             
             
 	char OS[5];
-	recv(clnt_sock, OS, 4, 0);
-	OS[5] = '\0';
+	recv(clnt_sock, OS, 5, 0);
 
         // 클라이언트 소켓을 스레드에 전달하기 위해 동적 할당
         int *new_sock = (int *)malloc(sizeof(int));
