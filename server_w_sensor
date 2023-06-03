@@ -9,12 +9,12 @@
 #include <fcntl.h>
 #include <linux/input.h>
 #include <sys/time.h>
-#include <pthread.h>  // pthread 라이브러리 추가
-#include "winKeyboardInputEvent.h"
+#include <pthread.h>  // pthread for multi thread
+#include "winKeyboardInputEvent.h" //multi os input for window
 #include <wiringPi.h> // this includes the Pi GPIO constants
 
-#define evdPath_kbd "/dev/input/event1"
-#define evdPath_mouse "/dev/input/event0"
+#define evdPath_kbd "/dev/input/event1" //keyboard
+#define evdPath_mouse "/dev/input/event0" //mouse
 
 //GPIO
 #define LIGHTSEN_OUT 23  //gpio27 - J13 connect
@@ -23,64 +23,65 @@ int Change = 0;
 int sensor= 0;
 
 void *client_handler_sensor() {
+    //check file descriptor open
     int fd = open(evdPath_kbd, O_RDWR);
     if (fd < 0) {
-	perror("error");
-	exit(0);
+        perror("error");
+        exit(0);
     }
 
     struct timeval tv;
     struct input_event event[3] = {
-	{tv, 4, 4, 0},
-	{tv, 1, 0, 0},
-	{tv, 0, 0, 0}
-    };
+        {tv, 4, 4, 0},
+        {tv, 1, 0, 0},
+        {tv, 0, 0, 0}
+        };
     
-    int evnt_value = 17;
+    int evnt_value = 17; // put value for sensor control.
     
     while(1) {
-	int previous = sensor;
-	sensor = digitalRead(LIGHTSEN_OUT);
-	delay(100);
-	if(previous != sensor){  
-	    Change += 1;
-	}
-	
-	if (Change % 3 == 0 && Change !=0){
-
-	    //ON
-	    printf("will write %d\n", Change);
-	    
-	    gettimeofday(&tv, NULL);
-	    event[0].time = tv;
-	    event[0].value = evnt_value;
-	    
-	    event[1].time = tv;
-	    event[1].code = evnt_value;
-	    event[1].value = 1;
-	    
-	    event[2].time = tv;
-	    for(int i = 0; i < 3; i++){
-		write(fd, &event[i], sizeof(event[i]));  
-	    }
-	    
-	    //OFF
-	    gettimeofday(&tv, NULL);
-	    event[0].time = tv;
-	    event[0].value = evnt_value;
-	    
-	    event[1].time = tv;
-	    event[1].code = evnt_value;
-	    event[1].value = 0;
-	    
-	    event[2].time = tv;
-	    
-	    for(int i = 0; i < 3; i++){
-		write(fd, &event[i], sizeof(event[i]));
-	    }
-	    
-	    Change = 0;
-	}
+        int previous = sensor;
+        sensor = digitalRead(LIGHTSEN_OUT);
+        delay(100);
+        // Only enter input when sensor value is changed.
+        if(previous != sensor){  
+            Change += 1;
+        }
+        // you can change number of change ratio of sensor input frequency.
+        if (Change % 3 == 0 && Change !=0){
+            //when sensor input is on 
+            printf("will write %d\n", Change);
+            gettimeofday(&tv, NULL);
+            event[0].time = tv;
+            event[0].value = evnt_value;
+            
+            event[1].time = tv;
+            event[1].code = evnt_value;
+            event[1].value = 1;
+            
+            event[2].time = tv;
+            for(int i = 0; i < 3; i++){
+            write(fd, &event[i], sizeof(event[i]));  
+            }
+            
+            //when sensor input is off
+            gettimeofday(&tv, NULL);
+            event[0].time = tv;
+            event[0].value = evnt_value;
+            
+            event[1].time = tv;
+            event[1].code = evnt_value;
+            event[1].value = 0;
+            
+            event[2].time = tv;
+            
+            for(int i = 0; i < 3; i++){
+            write(fd, &event[i], sizeof(event[i]));
+            }
+            
+            Change = 0;
+            //reset Change value
+        }
     }
 
 }
@@ -88,7 +89,7 @@ void *client_handler_sensor() {
 //GPIO
 
 
-
+//Error handling function   
 void error_handling(char *message);
 
 struct thread_struct {
@@ -96,7 +97,7 @@ struct thread_struct {
 	int evnt;
 };
 
-// handler for window clinet
+// handler for window clinet (other OS)
 void *client_handler_window(void *arg)
 {    
     int nbytes;
@@ -109,17 +110,15 @@ void *client_handler_window(void *arg)
     };
 
     
-    // 현재 스레드의 클라이언트 소켓 가져오기
+    // get socket descriptor
     struct thread_struct evnt_struct = *((struct thread_struct *)arg);
     
     int clnt_sock = *(evnt_struct.socket);
-    free(evnt_struct.socket);  // 동적 할당된 메모리 해제
+    free(evnt_struct.socket);  // free malloc memory
     
+    //!! open file read/write !!
     int fd = open(evdPath_kbd, O_RDWR);
-    printf("fd %d\n", fd);
-    
-    printf("window client connected! tid : %ld\n", pthread_self());
-    printf("fd %d\n", fd);
+    printf("window client connected!\n");
 
     // open event fd
     if (fd < 0) {
@@ -135,10 +134,9 @@ void *client_handler_window(void *arg)
             close(clnt_sock);
             printf("exit! tid : %ld\n", pthread_self());
             pthread_exit(NULL);
-        }
-	
-	//if(recv(clnt_sock, &event, sizeof(event), MSG_PEEK | MSG_DONTWAIT) == 0) {}
-        
+        } //if(recv(clnt_sock, &event, sizeof(event), MSG_PEEK | MSG_DONTWAIT) == 0) {}
+    
+	    
 	gettimeofday(&tv, NULL);
 	event[0].time = tv;
 	event[0].value = window_event.value;
@@ -151,48 +149,42 @@ void *client_handler_window(void *arg)
 	
 	// compare before event for 2
 			
-	// write event to event fd
+	// write input event to event fd manually
 	for(int i = 0; i < 3; i++){
 		write(fd, &event[i], sizeof(event[i]));
-		
-		printf("pid %d, tid %ld, time %ld %ld, type %d, code %d, value %d\n", getpid() ,pthread_self(), tv.tv_sec, tv.tv_usec,  event[i].type, event[i].code, event[i].value);
-	}
+		}
     }
-
+    //terminate thread & file descriptor
     close(fd);
     close(clnt_sock);
-
     pthread_exit(NULL);
     
 }
 
 
 
-// 스레드 실행 함수
+// thread handler for unix client (same OS)
 void *client_handler_unix(void *arg)
 {    
+    int fd = 0;
     int nbytes;
     struct input_event event;
     struct timeval tv;
     
-    
     struct thread_struct evnt_struct = *((struct thread_struct *)arg);
     
     int clnt_sock = *(evnt_struct.socket);
-    free(evnt_struct.socket);  // 동적 할당된 메모리 해제
-    
-    int fd = 0;
+    free(evnt_struct.socket);  // free malloc memory
+
+    // open event file descriptor
     switch(evnt_struct.evnt) {
     	case 0:
-		printf("fd");
     		fd = open(evdPath_kbd, O_RDWR);
     		break;	
     	case 1:
-		fd = open(evdPath_mouse, O_RDWR);
+		    fd = open(evdPath_mouse, O_RDWR);
     		break;
     }
-
-    printf("unix client connected! tid : %ld\n", pthread_self());
 
     // open event fd
     if (fd < 0) {
@@ -200,6 +192,8 @@ void *client_handler_unix(void *arg)
         pthread_exit(NULL);
     }
     
+    printf("unix client connected!\n");
+
     while(1){
         // get buffer about event from client
         nbytes = read(clnt_sock, &event, sizeof(event));
@@ -210,39 +204,35 @@ void *client_handler_unix(void *arg)
             pthread_exit(NULL);
         } 
 	
-        
-        tv = event.time;
-        printf("pid %d, tid %ld, time %ld %ld, type %d, code %d, value %d\n", getpid() ,pthread_self(), tv.tv_sec, tv.tv_usec,  event.type, event.code, event.value);
-        
         // write event to event fd
         write(fd, &event, sizeof(event));
 
     }
 
+    //terminate thread & file descriptor
     close(fd);
     close(clnt_sock);
-
     pthread_exit(NULL);
 }
 
 int main(int argc, char* argv[])
 {          
+    //check GPIO connected to sensor
     if (wiringPiSetup()<0){
-	return 1;
+	    return 1;
 	}
+    // set pin mode for sensor input
     pinMode(LIGHTSEN_OUT,INPUT);
     // create socket using TCP/ipv4
     int serv_sock;
     int clnt_sock;
-    
-        pthread_t tid2;
+    pthread_t tid2;
     struct sockaddr_in serv_addr;
     if (pthread_create(&tid2, NULL, client_handler_sensor,NULL) != 0) {
 	    perror("pthread_create() error\n");
 	    exit(1);
     }
-
-    serv_sock = socket(PF_INET , SOCK_STREAM, 0);  // TCP, ipv4
+    serv_sock = socket(PF_INET , SOCK_STREAM, 0);  // TCP, ipv4 | Change SOCK_STREAM to SOCK_DGRAM for UDP
     if (serv_sock == -1)
         error_handling("socket error");
 
@@ -264,10 +254,10 @@ int main(int argc, char* argv[])
 
     char ip_addr[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &(serv_addr.sin_addr), ip_addr, INET_ADDRSTRLEN);
-    printf("Server address(IPv4) is %s\n", ip_addr);
+    printf("Server address(IPv4) is %s\n", ip_addr); // print server ip address
 
     while (1) {
-	printf("waiting new client...\n");
+	    printf("waiting new client...\n");
         struct sockaddr_in clnt_addr; // for accept
         socklen_t clnt_addr_size;
 
@@ -277,50 +267,49 @@ int main(int argc, char* argv[])
         if (clnt_sock == -1)
             error_handling("accept error");
             
-            
-	char OS[5];
-	read(clnt_sock, OS, sizeof(OS));
+        char OS[5];
+        read(clnt_sock, OS, sizeof(OS));
 
-        // 클라이언트 소켓을 스레드에 전달하기 위해 동적 할당
+        // malloc for new socket
         int* new_sock = (int *)malloc(sizeof(int));
         *new_sock = clnt_sock;
 
-        // 스레드 생성 및 실행
+        // generate thread 
         pthread_t tid;
      
         if(!strcmp(OS, "wind")) {
+            // create thread for windows client
         	struct thread_struct th_arg = { new_sock, 0 }; // 0: kbd, 1: mouse
-		if (pthread_create(&tid, NULL, client_handler_window, (void*)&th_arg) != 0) {
-			perror("pthread_create() error\n");
-			exit(1);
-		}
+            if (pthread_create(&tid, NULL, client_handler_window, (void*)&th_arg) != 0) {
+                perror("pthread_create() error\n");
+                exit(1);
+            }
         }
         else if(!strcmp(OS, "unix")) {
-	    printf("CONNECTED new client UNIX ");
+            // create thread for unix client
                     
-		int evnt;
-		if(read(clnt_sock, &evnt, sizeof(evnt)) == -1) {
-			printf("select keyboad : 0, mouse :1\n");
-			return 1;
-		}
-	    printf("TYPE : %d\n", evnt);
+            int evnt;
+            if(read(clnt_sock, &evnt, sizeof(evnt)) == -1) {
+                printf("select keyboad : 0, mouse :1\n");
+                return 1;
+            }
 
-        	struct thread_struct th_arg = { new_sock, evnt }; // 0: kbd, 1: mouse
-	    if (pthread_create(&tid, NULL, client_handler_unix, (void *)&th_arg) != 0) {
-		    perror("pthread_create() error\n");
-		    exit(1);
+            struct thread_struct th_arg = { new_sock, evnt }; // 0: kbd, 1: mouse
+            if (pthread_create(&tid, NULL, client_handler_unix, (void *)&th_arg) != 0) {
+                perror("pthread_create() error\n");
+                exit(1);
+            }
 	    }
-	}
         else {
-		printf("Wrong OS %s\n", OS);
-		   break;
+            printf("Wrong OS %s\n", OS);
+            break;
         }
     }
     
     close(serv_sock);
     return 0;
 }
-
+//error handling function
 void error_handling(char *message)
 {
     fputs(message, stderr);
