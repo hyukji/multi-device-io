@@ -9,18 +9,18 @@
 #include <fcntl.h>
 #include <linux/input.h>
 #include <sys/time.h>
-#include <pthread.h>  // pthread 라이브러리 추가!
-#include "winKeyboardInputEvent.h"
+#include <pthread.h>  // pthread header
+#include "winKeyboardInputEvent.h" // window keyboard event struct
 
-#define evdPath_kbd "/dev/input/event1"
-#define evdPath_mouse "/dev/input/event0"
+#define evdPath_kbd "/dev/input/event1" //keyboard
+#define evdPath_mouse "/dev/input/event0" //mouse
 
+//error handling
 void error_handling(char *message);
-
-struct thread_struct {
-	int* socket;
-	int evnt;
-};
+    struct thread_struct {
+        int* socket;
+        int evnt;
+    };
 
 // handler for window clinet
 void *client_handler_window(void *arg)
@@ -35,18 +35,14 @@ void *client_handler_window(void *arg)
     };
 
     
-    // 현재 스레드의 클라이언트 소켓 가져오기
+    // bring socket
     struct thread_struct evnt_struct = *((struct thread_struct *)arg);
-    
     int clnt_sock = *(evnt_struct.socket);
-    free(evnt_struct.socket);  // 동적 할당된 메모리 해제
-    
+    free(evnt_struct.socket);  // free malloc memory
+    // !! open file descriptor as read and write !!!
     int fd = open(evdPath_kbd, O_RDWR);
-    printf("fd %d\n", fd);
-    
     printf("window client connected! tid : %ld\n", pthread_self());
-    printf("fd %d\n", fd);
-
+    
     // open event fd
     if (fd < 0) {
         perror("error");
@@ -94,19 +90,19 @@ void *client_handler_window(void *arg)
 
 
 
-// 스레드 실행 함수
+// thread handler for unix client
 void *client_handler_unix(void *arg)
 {    
     int nbytes;
     struct input_event event;
     struct timeval tv;
-    
-    
     struct thread_struct evnt_struct = *((struct thread_struct *)arg);
     
     int clnt_sock = *(evnt_struct.socket);
-    free(evnt_struct.socket);  // 동적 할당된 메모리 해제
+    free(evnt_struct.socket);  // free malloc memory
     
+
+    // choose input device 
     int fd = 0;
     switch(evnt_struct.evnt) {
     	case 0:
@@ -134,20 +130,16 @@ void *client_handler_unix(void *arg)
             close(clnt_sock);
             printf("exit! tid : %ld\n", pthread_self());
             pthread_exit(NULL);
-        } 
-	
+        }
         
         tv = event.time;
-        printf("pid %d, tid %ld, time %ld %ld, type %d, code %d, value %d\n", getpid() ,pthread_self(), tv.tv_sec, tv.tv_usec,  event.type, event.code, event.value);
-        
         // write event to event fd
         write(fd, &event, sizeof(event));
 
     }
-
+    // close file descriptor and socket
     close(fd);
     close(clnt_sock);
-
     pthread_exit(NULL);
 }
 
@@ -159,7 +151,7 @@ int main(int argc, char* argv[])
     
     struct sockaddr_in serv_addr;
 
-    serv_sock = socket(PF_INET , SOCK_STREAM, 0);  // TCP, ipv4
+    serv_sock = socket(PF_INET , SOCK_STREAM, 0);  // TCP, ipv4 ! if change to UDP -> SOCK_DGRAM
     if (serv_sock == -1)
         error_handling("socket error");
 
@@ -198,11 +190,11 @@ int main(int argc, char* argv[])
 	char OS[5];
 	read(clnt_sock, OS, sizeof(OS));
 
-        // 클라이언트 소켓을 스레드에 전달하기 위해 동적 할당
+        // malloc for new socket
         int* new_sock = (int *)malloc(sizeof(int));
         *new_sock = clnt_sock;
 
-        // 스레드 생성 및 실행
+        // generate thread for client
         pthread_t tid;
      
         if(!strcmp(OS, "wind")) {
@@ -237,7 +229,7 @@ int main(int argc, char* argv[])
     close(serv_sock);
     return 0;
 }
-
+//error handling
 void error_handling(char *message)
 {
     fputs(message, stderr);
