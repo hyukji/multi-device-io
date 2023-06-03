@@ -7,4 +7,7 @@ Project of system_programming lecture in DGIST
 # TO DO LIST
 if(recv(clnt_sock, &event, sizeof(event), MSG_PEEK | MSG_DONTWAIT) == 0)
 
+# window client compile
+gcc -o client.exe client.c -lws2_32 -Wall
+
 
