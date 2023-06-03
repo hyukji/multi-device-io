@@ -50,17 +50,29 @@ int main(int argc, char* argv[]) {
 		return 1;
 	}
 
+    int msg;
     while(1) {
-        window_event.state = 1;
-        window_event.value = 17;
-        send(clientSocket, &window_event, sizeof(window_event), 0);
-    
-        window_event.state = 0;
-        window_event.value = 17;
-        send(clientSocket, &window_event, sizeof(window_event), 0);
+        msg = getch();
+
+        int corr = 1;
+        switch(msg) {
+            case 32:  // space bar
+                window_event.value = 57;
+                break;
+            case 13: // enter
+                window_event.value = 28;
+                break;
+            default:
+                corr = 0;
+        }
+
+        if(!corr) { continue; }
         
-        print("send\n")
-        sleep(1);
+        window_event.state = 1;
+        send(clientSocket, &window_event, sizeof(window_event), 0);
+
+        window_event.state = 0;
+        send(clientSocket, &window_event, sizeof(window_event), 0);
     }
 
     // 소켓 및 Winsock 종료
