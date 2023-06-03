@@ -4,7 +4,6 @@
 #include "winKeyboardInputEvent.h"
 
 // gcc -o client.exe client.c -lws2_32 -Wall
-#define BUFFER_SIZE 1024
 
 int main(int argc, char* argv[]) {
     WSADATA wsaData;
@@ -13,13 +12,13 @@ int main(int argc, char* argv[]) {
 
 	struct WinKBD_input_event window_event;
 
-    // WSAStartup() 함수를 호출하여 Winsock 라이브러리 초기화
+    // initialize Winsock.
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
         printf("Failed to initialize Winsock.\n");
         return 1;
     }
 
-    // 클라이언트 소켓 생성
+    // create socket
     clientSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (clientSocket == INVALID_SOCKET) {
         printf("Failed to create socket.\n");
@@ -27,12 +26,12 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    // 서버 주소 설정
+    // set socket addr
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_addr.s_addr = inet_addr(argv[1]);
     serverAddress.sin_port = htons(9090);
 
-    // 서버에 연결
+    // connect to server
     if (connect(clientSocket, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) == SOCKET_ERROR) {
         printf("Failed to connect to the server.\n");
         closesocket(clientSocket);
@@ -42,7 +41,7 @@ int main(int argc, char* argv[]) {
 
     printf("Connected to the server.\n");
 
-    // 서버로 데이터 전송
+    // send to server about OS
     char OS[5] = "wind";
     if(send(clientSocket, OS, 5, 0) < 0)
 	{
@@ -52,12 +51,16 @@ int main(int argc, char* argv[]) {
 
     int msg;
     while(1) {
-        msg = getch();
+        // get kbd input by getch()
+        msg = getch(); // return value is ascii code
 
         int corr = 1;
         switch(msg) {
+            case 113:  // q
+                window_event.value = 16;
+                break;
             case 32:  // space bar
-                window_event.value = 57;
+                window_event.value = 16;
                 break;
             case 13: // enter
                 window_event.value = 28;
@@ -65,9 +68,9 @@ int main(int argc, char* argv[]) {
             default:
                 corr = 0;
         }
-
         if(!corr) { continue; }
         
+        // send data
         window_event.state = 1;
         send(clientSocket, &window_event, sizeof(window_event), 0);
 
