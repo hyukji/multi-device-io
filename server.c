@@ -105,7 +105,7 @@ void *client_handler_unix(void *arg)
     int clnt_sock = *(evnt_struct.socket);
     free(arg);  // 동적 할당된 메모리 해제
     
-    switch(evnt_struct.event) {
+    switch(evnt_struct.evnt) {
     	case 0:
     		fd = open(evdPath_kbd, O_RDWR);
     		break;	
@@ -214,7 +214,7 @@ int main(int argc, char* argv[])
                     
 		int evnt;
 		if(read(clnt_sock, &evnt, sizeof(evnt)) == -1) {
-			print("select keyboad : 0, mouse :1\n");
+			printf("select keyboad : 0, mouse :1\n");
 		}
 
         	struct thread_struct th_arg = { new_sock, evnt }; // 0: kbd, 1: mouse
