@@ -15,7 +15,6 @@ void error_handling(char* message);
 int main(int argc, char* argv[])
 {
 
-	char* OS = "unix";
 	int clnt_fd, evnt_fd;
 	struct WinKBD_input_event window_event;
 	struct sockaddr_in serv_addr;
@@ -39,25 +38,42 @@ int main(int argc, char* argv[])
     printf("clent connect success!\n");   
 
 /*    write(clnt_fd, OS, sizeof(OS));*/
-    if(send(clnt_fd, OS, 4, 0) < 0)
+
+	char OS[5] = "unix";
+	
+    write(clnt_fd, OS, sizeof(OS));
+	
+    /*if(send(clnt_fd, OS, 5, 0) < 0)
 	{
 		puts("Send failed");
 		return 1;
 	}
-    
+    */
     
     int device;
     printf("Enter a input device(kbd : 0, mouse : 1) : ");
     scanf("%d", &device);
-    
     write(clnt_fd, &device, sizeof(device));
+    
+    printf("%d\n", device);
+    switch(device) {
+	case 0: //kbd
+    printf("0\n");
+	    evnt_fd = open("/dev/input/event1", O_RDONLY);
+	    break;
+	case 1: //mouse
+    printf("1\n");
+	    evnt_fd = open("/dev/input/event0", O_RDONLY);
+	    break;
+    }
 
     		// open keyboard event fd
-	evnt_fd = open("/dev/input/event2", O_RDONLY);
 	if(evnt_fd < 0) {
 		perror("error in open event file");
 		return 1;
 	}
+	
+	printf("evnt fd %d\n", evnt_fd);
 	while(1) {
 		if(read(evnt_fd, &event, sizeof(event)) == -1) {
 		    perror("error in read event");
