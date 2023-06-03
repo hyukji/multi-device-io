@@ -25,17 +25,17 @@ void *client_handler(void *arg)
     int nbytes;
     struct input_event event;
     struct timeval tv;
-
     int clnt_sock = *((int *)arg);
     free(arg);      
     printf("connected! tid : %ld\n", pthread_self());
     
     const char *evdPath = "/dev/input/event3"; //Need to change event file
+
     char *rstPath = (char *)malloc(sizeof(pthread_self())*2);
-    sprintf(rstPath,"%ld.bin", pthread_self());
+    sprintf(rstPath,"%ld.out", pthread_self());
 
     fd = open(evdPath, O_RDWR);
-    fd2 = open(rstPath, O_RDWR | O_CREAT | S_IRWXU);
+    //fd2 = open(rstPath, O_RDWR | O_CREAT | S_IRWXU);
 
     if (fd < 0) {
         perror("error");
@@ -47,6 +47,14 @@ void *client_handler(void *arg)
         pthread_exit(NULL);
     }
     
+    FILE * fp = fopen(rstPath, "w+");
+
+    if(fp == NULL) {
+        perror("error");
+        pthread_exit(NULL);
+    }
+
+
     while (1) {
 
         nbytes = read(clnt_sock, &event, sizeof(event));
@@ -60,15 +68,18 @@ void *client_handler(void *arg)
         if(recv(clnt_sock, &event, sizeof(event), MSG_PEEK | MSG_DONTWAIT) == 0) break;
 
         write(fd, &event, sizeof(event));
-        write(fd2, &event, sizeof(event));
+        //write(fd2, &event, sizeof(event));
 	
         tv = event.time;
-        printf("tid %lu, time %ld %ld, type %d, code %d, value %d\n", pthread_self(), tv.tv_sec, tv.tv_usec, event.type, event.code, event.value);
+        printf("tid %lu, time %ld %ld, type %ul, code %ul, value %ul\n", pthread_self(), tv.tv_sec, tv.tv_usec, event.type, event.code, event.value);
+        //fprintf(fp,"time %ld %ld, type %d, code %d, value %d\n", tv.tv_sec, tv.tv_usec, event.type, event.code, event.value);
+        fprintf(fp,"type %u, code %u, value %u\n", event.type, event.code, event.value);
 
     }
 
     close(fd);
-    close(fd2);
+    //close(fd2);
+    fclose(fp);
     close(clnt_sock);
     free(rstPath);
     pthread_exit(NULL);

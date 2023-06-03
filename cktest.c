@@ -19,7 +19,6 @@ void error_handling(char* message)
 }
 
 void sig_handle(){
-    printf("Terminted!!\n");
     *ptr = -1;
 } 
 
@@ -27,13 +26,23 @@ void sig_handle(){
     
 int main(int argc, char* argv[])
 {
-    int clnt_fd, evnt_fd, loop;
+    int clnt_fd, evnt_fd, loop, nbytes;
     struct sockaddr_in serv_addr;
     struct input_event event;
     struct timeval tv;
     
     char buffer[sizeof(event)];
     evnt_fd = open(argv[2], O_RDONLY);
+
+    char *inPath = (char *)malloc(sizeof(getpid())*2);
+    sprintf(inPath,"%ul.out", getpid());
+
+    FILE * fp = fopen(inPath, "w+");
+
+    if(fp == NULL) {
+        perror("error in open file");
+        return 1;
+    }
 
     if(evnt_fd < 0) {
         perror("error in open event file");
@@ -60,8 +69,9 @@ int main(int argc, char* argv[])
 
     while (loop > 0) {
 	    
+	nbytes = read(evnt_fd, &event, sizeof(event));
 	// Handle READ ERROR
-        if(read(evnt_fd, &event, sizeof(event)) == -1) {
+        if(nbytes == -1) {
             perror("error in read event");
             close(evnt_fd);
    	    close(clnt_fd);
@@ -69,16 +79,19 @@ int main(int argc, char* argv[])
         } 
 	
 	// BREAK when reach to the end of the file
-	if(read(evnt_fd, &event, sizeof(event)) == 0){
-	    printf("FILE READ END\n");
+	if(nbytes == 0){
+	    printf("FILE READ END");
 	    break;
 	}
 
 	tv = event.time;
-        printf("time %ld %ld, type %d, code %d, value %d\n", tv.tv_sec, tv.tv_usec,  event.type, event.code, event.value);
+        printf("time %ld %ld, type %d, code %d, value %d\n", tv.tv_sec, tv.tv_usec, event.type, event.code, event.value);
+        //fprintf(fp, "time %ld %ld, type %u, code %u, value %u\n", tv.tv_sec, tv.tv_usec, event.type, event.code, event.value);
+        fprintf(fp, "type %u, code %u, value %u\n", event.type, event.code, event.value);
         write(clnt_fd, &event, sizeof(event));
     }
-    
+
+    fclose(fp);
    close(clnt_fd);
    close(evnt_fd);
 
