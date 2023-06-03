@@ -12,14 +12,21 @@
 #include <pthread.h>  // pthread 라이브러리 추가
 #include "winKeyboardInputEvent.h"
 
+#define evdPath_kbd "/dev/input/event0"
+#define evdPath_mouse "/dev/input/event1"
+
 void error_handling(char *message);
-int fd;
+
+struct thread_struct {
+	int* socket;
+	int evnt;
+};
 
 
 // handler for window clinet
 void *client_handler_window(void *arg)
 {    
-    int nbytes;
+    int fd, nbytes;
     struct WinKBD_input_event window_event;
     struct timeval tv;
     struct input_event event[3] = {
@@ -28,9 +35,15 @@ void *client_handler_window(void *arg)
     	{tv, 0, 0, 0}
     };
 
+    
     // 현재 스레드의 클라이언트 소켓 가져오기
-    int clnt_sock = *((int *)arg);
+    struct thread_struct evnt_struct = *((struct thread_struct *)arg);
+    
+    int clnt_sock = *(evnt_struct.socket);
     free(arg);  // 동적 할당된 메모리 해제
+    
+    fd = open(evdPath_kbd, O_RDWR);
+    printf("fd %d\n", fd);
     
     printf("window client connected! tid : %ld\n", pthread_self());
     printf("fd %d\n", fd);
@@ -82,13 +95,25 @@ void *client_handler_window(void *arg)
 // 스레드 실행 함수
 void *client_handler_unix(void *arg)
 {    
-    int nbytes;
+    int fd, nbytes;
     struct input_event event;
     struct timeval tv;
-
-    // 현재 스레드의 클라이언트 소켓 가져오기
-    int clnt_sock = *((int *)arg);
+    
+    
+    struct thread_struct evnt_struct = *((struct thread_struct *)arg);
+    
+    int clnt_sock = *(evnt_struct.socket);
     free(arg);  // 동적 할당된 메모리 해제
+    
+    switch(evnt_struct.evnt) {
+    	case 0:
+    		fd = open(evdPath_kbd, O_RDWR);
+    		break;	
+    	case 1:
+		fd = open(evdPath_mouse, O_RDWR);
+    		break;
+    }
+    printf("fd %d\n", fd);
     
 
     printf("unix client connected! tid : %ld\n", pthread_self());
@@ -129,10 +154,6 @@ int main(int argc, char* argv[])
     // create socket using TCP/ipv4
     int serv_sock;
     int clnt_sock;
-
-    const char* evdPath = "/dev/input/event0";
-    fd = open(evdPath, O_RDWR);
-    printf("main fd %d\n", fd);
     
     struct sockaddr_in serv_addr;
 
@@ -176,23 +197,31 @@ int main(int argc, char* argv[])
 	recv(clnt_sock, OS, 5, 0);
 
         // 클라이언트 소켓을 스레드에 전달하기 위해 동적 할당
-        int *new_sock = (int *)malloc(sizeof(int));
+        int* new_sock = (int *)malloc(sizeof(int));
         *new_sock = clnt_sock;
 
         // 스레드 생성 및 실행
         pthread_t tid;
-        
+     
         if(!strcmp(OS, "wind")) {
-		if (pthread_create(&tid, NULL, client_handler_window, (void *)new_sock) != 0) {
+        	struct thread_struct th_arg = { new_sock, 0 }; // 0: kbd, 1: mouse
+		if (pthread_create(&tid, NULL, client_handler_window, (void*)&th_arg) != 0) {
 			perror("pthread_create() error\n");
 			exit(1);
 		}
         }
         else if(!strcmp(OS, "unix")) {
-		    if (pthread_create(&tid, NULL, client_handler_unix, (void *)new_sock) != 0) {
-			    perror("pthread_create() error\n");
-			    exit(1);
-		    }
+                    
+		int evnt;
+		if(read(clnt_sock, &evnt, sizeof(evnt)) == -1) {
+			printf("select keyboad : 0, mouse :1\n");
+		}
+
+        	struct thread_struct th_arg = { new_sock, evnt }; // 0: kbd, 1: mouse
+	    if (pthread_create(&tid, NULL, client_handler_unix, (void *)&th_arg) != 0) {
+		    perror("pthread_create() error\n");
+		    exit(1);
+	    }
 	}
         else {
 		printf("Wrong OS %s\n", OS);

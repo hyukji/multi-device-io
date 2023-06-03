@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
 
     // 서버로 데이터 전송
     char OS[5] = "wind";
-    if(send(clientSocket, OS, 4, 0) < 0)
+    if(send(clientSocket, OS, 5, 0) < 0)
 	{
 		puts("Send failed");
 		return 1;
@@ -58,8 +58,9 @@ int main(int argc, char* argv[]) {
         window_event.state = 0;
         window_event.value = 17;
         send(clientSocket, &window_event, sizeof(window_event), 0);
-printf("send");
-        sleep(14);
+        
+        print("send\n")
+        sleep(1);
     }
 
     // 소켓 및 Winsock 종료
