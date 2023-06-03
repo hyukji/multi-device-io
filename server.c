@@ -9,7 +9,7 @@
 #include <fcntl.h>
 #include <linux/input.h>
 #include <sys/time.h>
-#include <pthread.h>  // pthread 라이브러리 추가
+#include <pthread.h>  // pthread 라이브러리 추가!
 #include "winKeyboardInputEvent.h"
 
 #define evdPath_kbd "/dev/input/event1"
