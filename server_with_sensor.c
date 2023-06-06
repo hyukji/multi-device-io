@@ -128,14 +128,17 @@ void *client_handler_window(void *arg)
 
     while(1){
         // get buffer about event from client
+	
+        if(recv(clnt_sock, &window_event, sizeof(window_event), MSG_PEEK | MSG_DONTWAIT) == 0) break;
+
         nbytes = read(clnt_sock, &window_event, sizeof(window_event));
         if(nbytes < 0){
             perror("read error\n");
             close(clnt_sock);
             printf("exit! tid : %ld\n", pthread_self());
             pthread_exit(NULL);
-        } //if(recv(clnt_sock, &event, sizeof(event), MSG_PEEK | MSG_DONTWAIT) == 0) {}
-    
+        } 
+
 	    
 	gettimeofday(&tv, NULL);
 	event[0].time = tv;
@@ -196,6 +199,9 @@ void *client_handler_unix(void *arg)
 
     while(1){
         // get buffer about event from client
+	
+        if(recv(clnt_sock, &event, sizeof(event), MSG_PEEK | MSG_DONTWAIT) == 0) break;
+
         nbytes = read(clnt_sock, &event, sizeof(event));
         if(nbytes < 0){
             perror("read error\n");
