@@ -6,3 +6,4 @@ If you want to make yourself, you need...
 2. Motor driver
 3. CDS for sensing 
 4. r=6mm l= 10cm steel bar
+5. jumper cable (at least 11)
